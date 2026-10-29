@@ -1,0 +1,113 @@
+<script nonce="<%= content_security_policy_nonce %>">
+(function () {
+  "use strict";
+
+  var nextIndex = 1000;
+  var each = function (selector, fn, root) { Array.prototype.forEach.call((root || document).querySelectorAll(selector), fn); };
+
+  function autogrow(textarea) {
+    textarea.style.height = "auto";
+    textarea.style.height = textarea.scrollHeight + 2 + "px";
+  }
+
+  // Highlights edited/removed keys and summarizes what the download will contain.
+  function refresh() {
+    var changed = 0, removed = 0, added = 0;
+
+    each("[data-leaf]", function (line) {
+      var value = line.querySelector("textarea");
+      var remove = line.querySelector("[data-remove-toggle]");
+      var isRemoved = remove.checked;
+      var isChanged = !isRemoved && value.value.trim() !== "";
+      value.disabled = isRemoved;
+      line.classList.toggle("is-removed", isRemoved);
+      line.classList.toggle("is-changed", isChanged);
+      if (isRemoved) removed++;
+      if (isChanged) changed++;
+    });
+
+    each("[data-new-key-row]", function (row) {
+      if (row.querySelector("input").value.trim() !== "") added++;
+    });
+
+    var summary = document.querySelector("[data-summary]");
+    var submit = document.querySelector("[data-submit]");
+    if (!summary) return;
+    var parts = [];
+    if (added) parts.push(added + " new");
+    if (changed) parts.push(changed + " changed");
+    if (removed) parts.push(removed + " removed");
+    summary.textContent = parts.length ? parts.join(" · ") : "No changes yet";
+    summary.classList.toggle("has-changes", parts.length > 0);
+    if (submit) submit.disabled = parts.length === 0;
+  }
+
+  function addNewKey() {
+    var template = document.getElementById("new-key-template");
+    var list = document.querySelector("[data-new-keys]");
+    if (!template || !list) return;
+    var holder = document.createElement("div");
+    holder.innerHTML = template.innerHTML.replace(/__INDEX__/g, String(nextIndex++)).trim();
+    var row = holder.firstElementChild;
+    list.appendChild(row);
+    row.querySelector("input").focus();
+  }
+
+  function filter(query) {
+    query = query.toLowerCase();
+    var visible = [];
+    each("[data-leaf]", function (line) {
+      var path = line.getAttribute("data-leaf");
+      var show = path.toLowerCase().indexOf(query) !== -1;
+      line.classList.toggle("hidden", !show);
+      if (show) visible.push(path);
+    });
+    each("[data-group]", function (group) {
+      var prefix = group.getAttribute("data-group") + ".";
+      group.classList.toggle("hidden", !visible.some(function (p) { return p.indexOf(prefix) === 0; }));
+    });
+    each("[data-filter-empty]", function (el) { el.classList.toggle("hidden", visible.length > 0); });
+  }
+
+  document.addEventListener("click", function (event) {
+    var el = event.target.closest("[data-add-new-key], [data-remove-new-key]");
+    if (!el) return;
+    event.preventDefault();
+
+    if (el.hasAttribute("data-add-new-key")) {
+      addNewKey();
+    } else {
+      var row = el.closest("[data-new-key-row]");
+      if (document.querySelectorAll("[data-new-key-row]").length > 1) {
+        row.remove();
+      } else {
+        each("input, textarea", function (i) { i.value = ""; }, row);
+      }
+    }
+    refresh();
+  });
+
+  document.addEventListener("input", function (event) {
+    var target = event.target;
+    if (target.matches("[data-filter]")) filter(target.value);
+    if (target.matches("[data-autogrow]")) autogrow(target);
+    if (target.matches("[data-track]")) refresh();
+  });
+
+  document.addEventListener("change", function (event) {
+    if (!event.target.matches("[data-remove-toggle]")) return;
+    refresh();
+    if (!event.target.checked) event.target.closest("[data-leaf]").querySelector("textarea").focus();
+  });
+
+  // The proposal form answers with a file download, so the page itself does not change.
+  document.addEventListener("submit", function (event) {
+    if (!event.target.matches("[data-proposal-form]")) return;
+    var notice = document.getElementById("download-notice");
+    if (notice) setTimeout(function () { notice.hidden = false; notice.scrollIntoView({ behavior: "smooth", block: "nearest" }); }, 400);
+  });
+
+  each("[data-autogrow]", autogrow);
+  refresh();
+})();
+</script>

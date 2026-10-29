@@ -1,0 +1,16 @@
+<h1>EnvBro dummy app</h1>
+<p>Pretend to be a user, then open <%= link_to "/admin/env", env_bro.root_path %>.</p>
+<p>Signed in as: <strong><%= current_user&.email || "nobody" %></strong></p>
+
+<%= form_with url: role_path, method: :post do %>
+  <% (User::ROLES + [ nil ]).each do |role| %>
+    <button type="submit" name="role" value="<%= role %>"><%= role || "sign out" %></button>
+  <% end %>
+  <input type="hidden" name="return_to" value="<%= env_bro.root_path %>">
+<% end %>
+
+<ul>
+  <li><strong>viewer</strong>: no access</li>
+  <li><strong>developer</strong>: can propose changes</li>
+  <li><strong>admin</strong>: can propose, review and reveal values</li>
+</ul>

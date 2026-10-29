@@ -1,0 +1,7 @@
+<div class="newkey-row" data-new-key-row>
+  <input type="text" name="new_keys[<%= index %>][key]" value="<%= change.key %>" placeholder="stripe.publishable_key"
+    autocomplete="off" spellcheck="false" aria-label="New key" class="mono" data-track>
+  <textarea name="new_keys[<%= index %>][secret_value]" rows="1" placeholder="Value"
+    autocomplete="off" spellcheck="false" aria-label="Value" data-track data-autogrow><%= change.value %></textarea>
+  <button type="button" class="icon-btn" data-remove-new-key title="Remove" aria-label="Remove this new key">✕</button>
+</div>

@@ -1,0 +1,36 @@
+<% content_for :title, "Audit log" %>
+<div class="page-head">
+  <div>
+    <h1>Audit log</h1>
+    <p class="muted">Who proposed, reviewed or revealed what, and when proposals went live. Key names only, never values.</p>
+  </div>
+</div>
+
+<div class="panel">
+  <% if @events.empty? %>
+    <p class="empty">Nothing recorded yet.</p>
+  <% else %>
+    <table>
+      <thead>
+        <tr><th>When</th><th>Who</th><th>Event</th><th>Keys</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <% @events.each do |event| %>
+          <tr>
+            <td class="nowrap small" title="<%= event.created_at.utc.iso8601 %>"><%= env_bro_time(event.created_at) %></td>
+            <td><%= event.user_label %></td>
+            <td class="nowrap"><span class="badge badge-neutral"><%= event.event.humanize %></span></td>
+            <td class="key"><%= safe_join(event.keys, tag.br) %></td>
+            <td class="nowrap small">
+              <% if event.event == "proposal_created" %>
+                <%= env_bro_deployment_badge(event, @live_proposal) %>
+              <% elsif event.modified_after_review? %>
+                <span class="badge badge-changed" title="The deployed file is not the one EnvBro built. It was re-encrypted after review.">modified after review</span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</div>

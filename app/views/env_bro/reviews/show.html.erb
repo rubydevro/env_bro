@@ -1,0 +1,134 @@
+<% content_for :title, "Review · #{@environment.name}" %>
+<% can_reveal = env_bro_can?(:reveal) %>
+<% meta = @differ.proposed_metadata %>
+<% changes = @differ.changes %>
+<% unchanged = @differ.entries.reject(&:changed?) %>
+
+<div class="page-head">
+  <div>
+    <h1>Proposed changes to <%= @environment.name %></h1>
+    <p class="muted">Compared against the <%= @base_enc ? "uploaded base file" : "file deployed on this server" %>
+      (<code><%= env_bro_short_digest(@base_digest) %></code>).</p>
+  </div>
+  <%= link_to "Review another file", new_review_path, class: "btn" %>
+</div>
+
+<% case @base_status %>
+<% when :current %>
+  <div class="alert alert-ok">Built on the same version it is compared against. The diff below is exactly what this PR changes.</div>
+<% when :stale %>
+  <div class="alert alert-warn">
+    <strong>Outdated base.</strong> This file was built on version <code><%= env_bro_short_digest(meta["base_digest"]) %></code>,
+    not <code><%= env_bro_short_digest(@base_digest) %></code>. Changes made since then may be reverted by this PR. Look for unexpected removals or changes,
+    and ask the author to rebuild the file if in doubt.
+  </div>
+<% else %>
+  <div class="alert alert-warn">
+    <strong>Not built with EnvBro.</strong> The file has no EnvBro metadata, so it may have been edited by hand or be an older copy of the file.
+    Check every change below carefully.
+  </div>
+<% end %>
+
+<div class="split">
+  <div>
+    <%= form_with url: reveal_review_path, method: :post, local: true, data: { turbo: false } do %>
+      <%= hidden_field_tag :proposed_enc, @proposed_enc %>
+      <%= hidden_field_tag :base_enc, @base_enc %>
+
+      <div class="panel">
+        <div class="toolbar">
+          <h2>Changed keys</h2>
+          <% if can_reveal && changes.any? %>
+            <button type="submit" name="reveal_key" value="*" class="btn btn-small">Reveal all values</button>
+          <% end %>
+        </div>
+
+        <div class="summary">
+          <% %i[added changed removed].each do |status| %>
+            <span class="badge badge-<%= status %>"><%= @differ.counts[status] || 0 %> <%= status %></span>
+          <% end %>
+          <span class="badge badge-unchanged"><%= unchanged.size %> unchanged</span>
+        </div>
+
+        <% if changes.empty? %>
+          <p class="empty">No key or value differs from the base file.</p>
+        <% else %>
+          <table>
+            <thead>
+              <tr><th>Key</th><th>Status</th><th>Before</th><th>After</th><% if can_reveal %><th></th><% end %></tr>
+            </thead>
+            <tbody>
+              <% changes.each do |entry| %>
+                <% revealed = @revealed.include?(entry.key) %>
+                <tr class="row-<%= entry.status %>">
+                  <td class="key"><%= entry.key %></td>
+                  <td class="nowrap"><%= env_bro_status_badge(entry.status) %></td>
+                  <td><%= revealed ? env_bro_value(entry.old_value) : env_bro_masked(entry.old_value) %></td>
+                  <td><%= revealed ? env_bro_value(entry.new_value) : env_bro_masked(entry.new_value) %></td>
+                  <% if can_reveal %>
+                    <td class="nowrap">
+                      <% unless revealed %>
+                        <button type="submit" name="reveal_key" value="<%= entry.key %>" class="btn-link">reveal</button>
+                      <% end %>
+                    </td>
+                  <% end %>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+          <% if can_reveal %>
+            <p class="hint mt-12">Revealing values is recorded in the audit log.</p>
+          <% end %>
+        <% end %>
+      </div>
+
+      <% if unchanged.any? %>
+        <div class="panel">
+          <details>
+            <summary><%= unchanged.size %> unchanged keys</summary>
+            <table class="mt-12">
+              <tbody>
+                <% unchanged.each do |entry| %>
+                  <tr class="row-unchanged"><td class="key"><%= entry.key %></td></tr>
+                <% end %>
+              </tbody>
+            </table>
+          </details>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>Proposal</h2>
+      <% if meta %>
+        <dl class="meta">
+          <dt>Author</dt><dd><%= meta["proposed_by"].presence || "unknown" %></dd>
+          <dt>Built at</dt><dd><%= meta["proposed_at"] %></dd>
+          <dt>Built on</dt><dd><code><%= env_bro_short_digest(meta["base_digest"]) %></code></dd>
+          <% if @proposal_event %>
+            <dt>Status</dt><dd><%= env_bro_deployment_badge(@proposal_event, EnvBro::AuditEvent.live_proposal) %></dd>
+          <% end %>
+        </dl>
+        <% if Array(meta["changes"]).any? %>
+          <p class="muted small mt-12">Changes declared by the author:</p>
+          <ul class="steps">
+            <% Array(meta["changes"]).each do |c| %><li><code><%= c %></code></li><% end %>
+          </ul>
+        <% end %>
+      <% else %>
+        <p class="muted">No EnvBro metadata in this file.</p>
+      <% end %>
+    </div>
+
+    <div class="panel">
+      <h2>Before merging</h2>
+      <ol class="steps">
+        <li>Every changed key is expected and matches the PR description.</li>
+        <li>No unexpected removals (a sign of an outdated or replaced file).</li>
+        <li>The PR changes only <code><%= @environment.filename %></code>, nothing else.</li>
+      </ol>
+    </div>
+  </div>
+</div>

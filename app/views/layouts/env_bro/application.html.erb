@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title><%= content_for?(:title) ? "#{yield(:title)} · EnvBro" : "EnvBro" %></title>
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+  <%= render "env_bro/shared/styles" %>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <%= link_to root_path, class: "brand" do %>
+        <span class="brand-mark">🔐</span> EnvBro
+      <% end %>
+      <span class="badge badge-neutral"><%= @environment.name %></span>
+      <nav class="nav">
+        <% if env_bro_can?(:propose) %><%= link_to "Propose", new_proposal_path %><% end %>
+        <% if env_bro_can?(:review) %>
+          <%= link_to "Review", new_review_path %>
+          <%= link_to "Audit log", audit_path %>
+        <% end %>
+      </nav>
+      <% if env_bro_user %>
+        <span class="whoami muted small"><%= EnvBro.config.user_label.call(env_bro_user) %></span>
+      <% end %>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <%= yield %>
+  </main>
+
+  <%= render "env_bro/shared/script" %>
+</body>
+</html>

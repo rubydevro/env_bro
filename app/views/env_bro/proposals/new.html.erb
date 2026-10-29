@@ -1,0 +1,82 @@
+<% content_for :title, "Propose · #{@environment.name}" %>
+<div class="page-head">
+  <div>
+    <h1>Propose a change to <%= @environment.name %></h1>
+    <p class="muted">Existing values stay hidden. Type a value to replace one, tick <em>remove</em> to drop a key, or add new keys.</p>
+  </div>
+</div>
+
+<% if @error %>
+  <div class="alert alert-error"><%= @error %></div>
+<% end %>
+
+<%= form_with url: proposal_path, method: :post, local: true, data: { proposal_form: true, turbo: false } do %>
+  <section class="panel">
+    <div class="toolbar">
+      <h2>Add new keys</h2>
+      <button type="button" class="btn btn-small" data-add-new-key>+ Another key</button>
+    </div>
+    <div data-new-keys>
+      <% @new_keys.each_with_index do |change, i| %>
+        <%= render "new_key_row", change: change, index: i %>
+      <% end %>
+    </div>
+    <p class="hint">Nest keys with dots: <code>stripe.publishable_key</code> goes under <code>stripe:</code>. A new group is created if needed.</p>
+  </section>
+
+  <section class="panel panel-flush">
+    <div class="toolbar panel-pad">
+      <h2><code><%= @environment.filename %></code></h2>
+      <input type="search" class="filter" placeholder="Filter keys…" data-filter aria-label="Filter keys">
+    </div>
+
+    <% if @outline.empty? %>
+      <p class="empty">This file has no keys yet. Add some above.</p>
+    <% else %>
+      <div class="yaml">
+        <% index = 0 %>
+        <% @outline.each do |line| %>
+          <% if line.group %>
+            <div class="yaml-line yaml-group" data-group="<%= line.path %>">
+              <span class="yaml-key depth-<%= [ line.depth, 6 ].min %>"><%= line.name %>:</span>
+            </div>
+          <% else %>
+            <% edit = @edits[line.path] %>
+            <% removed = edit&.action == "delete" %>
+            <div class="yaml-line yaml-leaf<%= ' is-removed' if removed %><%= ' is-changed' if edit&.value.present? %>" data-leaf="<%= line.path %>">
+              <label class="yaml-key depth-<%= [ line.depth, 6 ].min %>" for="edit_<%= index %>"><%= line.name %>:</label>
+              <input type="hidden" name="edits[<%= index %>][key]" value="<%= line.path %>">
+              <textarea name="edits[<%= index %>][secret_value]" id="edit_<%= index %>" rows="1" placeholder="•••••• unchanged"
+                autocomplete="off" spellcheck="false" data-track data-autogrow<%= ' disabled' if removed %>><%= edit&.value unless removed %></textarea>
+              <label class="remove-toggle" title="Remove <%= line.path %>">
+                <input type="checkbox" name="edits[<%= index %>][remove]" value="1" data-track data-remove-toggle<%= ' checked' if removed %>> remove
+              </label>
+            </div>
+            <% index += 1 %>
+          <% end %>
+        <% end %>
+        <p class="empty hidden" data-filter-empty>No keys match.</p>
+      </div>
+    <% end %>
+  </section>
+
+  <div class="submitbar">
+    <span class="muted" data-summary>No changes yet</span>
+    <button type="submit" class="btn btn-primary" data-submit>Build &amp; download <%= @environment.filename %></button>
+  </div>
+
+  <div id="download-notice" class="alert alert-ok" hidden>
+    <strong>Your download should start now.</strong> Next:
+    <ol class="steps mt-12">
+      <li>Create a branch in the app repo.</li>
+      <li>Replace <code><%= env_bro_display_path(@environment.content_path) %></code> with the downloaded file.</li>
+      <li>Commit, push and open a pull request. Mention which keys you changed and why.</li>
+      <li>A reviewer checks it in EnvBro and merges.</li>
+    </ol>
+    <p class="small mt-12">If someone else's change merges first, build your file again. Encrypted files can't be merged.</p>
+  </div>
+<% end %>
+
+<template id="new-key-template">
+  <%= render "new_key_row", change: EnvBro::Editor::Change.new(action: "set"), index: "__INDEX__" %>
+</template>

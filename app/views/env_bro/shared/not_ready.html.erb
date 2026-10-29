@@ -1,0 +1,13 @@
+<% content_for :title, "Not available" %>
+<% status = @environment.status %>
+<div class="panel">
+  <h1><%= @environment.name %> credentials <%= env_bro_environment_badge(status) %></h1>
+  <% case status
+     when :missing_file %>
+    <p>There is no credentials file at <code><%= env_bro_display_path(@environment.content_path) %></code> on this server.</p>
+  <% when :missing_key %>
+    <p>This server has no key for <code><%= @environment.filename %></code>. Set <code><%= @environment.env_key %></code> or add <code><%= env_bro_display_path(@environment.key_path) %></code>.</p>
+  <% else %>
+    <p>The key on this server (<code><%= @environment.env_key %></code> or <code><%= env_bro_display_path(@environment.key_path) %></code>) cannot decrypt <code><%= @environment.filename %></code>.</p>
+  <% end %>
+</div>

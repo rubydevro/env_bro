@@ -1,0 +1,32 @@
+<% content_for :title, "Review · #{@environment.name}" %>
+<div class="page-head">
+  <div>
+    <h1>Review a proposed <%= @environment.name %> file</h1>
+    <p class="muted">Upload the <code><%= @environment.filename %></code> from the pull request to see which keys it changes.</p>
+  </div>
+</div>
+
+<% if @error %>
+  <div class="alert alert-error"><%= @error %></div>
+<% end %>
+
+<%= form_with url: review_path, method: :post, multipart: true, local: true, data: { turbo: false } do %>
+  <div class="panel">
+    <div class="field">
+      <label for="proposed_file">Proposed file</label>
+      <input type="file" name="proposed_file" id="proposed_file" accept=".enc" required>
+      <p class="hint">Download it from the PR branch, e.g. <code>git show my-branch:<%= env_bro_display_path(@environment.content_path) %> &gt; <%= @environment.filename %></code>.</p>
+    </div>
+
+    <details class="field">
+      <summary>Compare against another version (optional)</summary>
+      <div class="mt-12">
+        <label for="base_file">Base file</label>
+        <input type="file" name="base_file" id="base_file" accept=".enc">
+        <p class="hint">By default the proposal is compared with the file deployed on this server. Upload the file from <code>main</code> if it is ahead of what's deployed.</p>
+      </div>
+    </details>
+
+    <button type="submit" class="btn btn-primary">Show changes</button>
+  </div>
+<% end %>
