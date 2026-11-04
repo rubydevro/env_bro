@@ -39,7 +39,7 @@ gem "env_bro", git: "https://github.com/rubydevro/env_bro.git"
 ```
 
 ```sh
-bin/rails generate env_bro:install   # initializer, route, migration (--mount-path=/admin/env)
+bin/rails generate env_bro:install   # initializer, route (asks for the path; or --mount-path=/admin/env), migration
 bin/rails db:migrate
 ```
 
