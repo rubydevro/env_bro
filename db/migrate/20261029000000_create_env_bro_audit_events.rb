@@ -4,7 +4,8 @@ class CreateEnvBroAuditEvents < ActiveRecord::Migration[7.1]
       t.string :event, null: false
       t.string :user_label
       t.string :environment, null: false
-      t.json :details, null: false, default: {}
+      # No column default: MySQL rejects defaults on JSON columns. Audit.record always sets it.
+      t.json :details, null: false
 
       # proposal_created: the id embedded in the file's metadata and the SHA-256 of the file handed out.
       # proposal_deployed: the SHA-256 of the file found running.
