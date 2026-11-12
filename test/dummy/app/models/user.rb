@@ -1,6 +1,15 @@
-# Stand-in for the host app's user model. Roles: viewer, developer, admin.
+# Stand-in for the host app's user model. Each role holds one permission; the higher
+# ones (reviewer, admin) pick up the lower ones through EnvBro's hierarchy.
 class User
-  ROLES = %w[viewer developer admin].freeze
+  PERMISSIONS = {
+    "viewer" => [],
+    "creator" => %i[create],
+    "updater" => %i[update],
+    "developer" => %i[create update destroy],
+    "reviewer" => %i[review],
+    "admin" => %i[reveal]
+  }.freeze
+  ROLES = PERMISSIONS.keys.freeze
 
   attr_reader :role
 
@@ -16,11 +25,7 @@ class User
     "#{role}@example.com"
   end
 
-  def developer?
-    role.in?(%w[developer admin])
-  end
-
-  def admin?
-    role == "admin"
+  def can?(permission)
+    PERMISSIONS.fetch(role).include?(permission)
   end
 end

@@ -51,9 +51,11 @@ Then set the permissions in `config/initializers/env_bro.rb`. Everything is deni
 ```ruby
 EnvBro.configure do |config|
   # Who may do what. Each lambda gets the current user.
-  config.can_propose = ->(user) { user.developer? }
-  config.can_review  = ->(user) { user.admin? }
-  config.can_reveal  = ->(user) { user.admin? }
+  config.can_create  = ->(user) { user.developer? }  # propose new keys
+  config.can_update  = ->(user) { user.developer? }  # propose new values for existing keys
+  config.can_destroy = ->(user) { user.lead? }       # propose removing keys
+  config.can_review  = ->(user) { user.lead? }       # upload a proposal, see what changed (masked)
+  config.can_reveal  = ->(user) { user.admin? }      # see the actual values in a review (audited)
 
   # Defaults shown:
   # config.parent_controller = "::ApplicationController"   # gives access to your auth
@@ -64,6 +66,17 @@ EnvBro.configure do |config|
   # config.track_deployments = true
 end
 ```
+
+Any of `can_create`, `can_update` and `can_destroy` opens the propose page, which then only
+offers what the user may do (no "add keys" panel without `can_create`, no value fields without
+`can_update`, no remove toggles without `can_destroy`). The server checks every change too.
+
+Higher permissions include the lower ones, so you only grant each person one:
+
+- `can_review` also grants create, update and destroy.
+- `can_reveal` also grants everything else.
+
+`config.can_propose = ->(user) { ... }` is a shorthand that sets create, update and destroy together.
 
 ## One environment per deployment
 
@@ -103,13 +116,16 @@ The dummy app comes with sample `development` and `test` credentials and keys in
 home page, or append `?as=viewer|developer|admin` to any URL:
 
 - `viewer`: no access
-- `developer`: can propose changes
-- `admin`: can propose, review and reveal values
+- `creator`: can add keys
+- `updater`: can change existing values
+- `developer`: can create, update and remove keys
+- `reviewer`: can review, plus everything a developer can do
+- `admin`: can reveal values, plus everything else
 
 To try the full flow:
 
 1. As a developer, propose a change and download the file.
-2. As an admin, review that file.
+2. As a reviewer or admin, review that file.
 
 To check the stale-base warning, upload a different proposal as the base file.
 

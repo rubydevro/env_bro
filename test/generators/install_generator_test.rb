@@ -14,7 +14,9 @@ class EnvBro::Generators::InstallGeneratorTest < Rails::Generators::TestCase
   test "creates the initializer with everything denied" do
     run_install
     assert_file "config/initializers/env_bro.rb" do |content|
-      assert_match "config.can_propose = ->(user) { false }", content
+      %w[create update destroy review reveal].each do |permission|
+        assert_match "config.can_#{permission} = ->(user) { false }", content
+      end
     end
   end
 

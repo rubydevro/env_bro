@@ -2,7 +2,12 @@
 <div class="page-head">
   <div>
     <h1>Propose a change to <%= @environment.name %></h1>
-    <p class="muted">Existing values stay hidden. Type a value to replace one, tick <em>remove</em> to drop a key, or add new keys.</p>
+    <p class="muted">Existing values stay hidden.
+      <% abilities = [] %>
+      <% abilities << "add new keys" if can_create? %>
+      <% abilities << "type a value to replace one" if can_update? %>
+      <% abilities << "tick <em>remove</em> to drop a key".html_safe if can_destroy? %>
+      You can <%= safe_join(abilities, ", ") %>.</p>
   </div>
 </div>
 
@@ -11,6 +16,7 @@
 <% end %>
 
 <%= form_with url: proposal_path, method: :post, local: true, data: { proposal_form: true, turbo: false } do %>
+  <% if can_create? %>
   <section class="panel">
     <div class="toolbar">
       <h2>Add new keys</h2>
@@ -23,6 +29,7 @@
     </div>
     <p class="hint">Nest keys with dots: <code>stripe.publishable_key</code> goes under <code>stripe:</code>. A new group is created if needed.</p>
   </section>
+  <% end %>
 
   <section class="panel panel-flush">
     <div class="toolbar panel-pad">
@@ -31,7 +38,7 @@
     </div>
 
     <% if @outline.empty? %>
-      <p class="empty">This file has no keys yet. Add some above.</p>
+      <p class="empty">This file has no keys yet.<%= " Add some above." if can_create? %></p>
     <% else %>
       <div class="yaml">
         <% index = 0 %>
@@ -45,12 +52,20 @@
             <% removed = edit&.action == "delete" %>
             <div class="yaml-line yaml-leaf<%= ' is-removed' if removed %><%= ' is-changed' if edit&.value.present? %>" data-leaf="<%= line.path %>">
               <label class="yaml-key depth-<%= [ line.depth, 6 ].min %>" for="edit_<%= index %>"><%= line.name %>:</label>
-              <input type="hidden" name="edits[<%= index %>][key]" value="<%= line.path %>">
-              <textarea name="edits[<%= index %>][secret_value]" id="edit_<%= index %>" rows="1" placeholder="•••••• unchanged"
-                autocomplete="off" spellcheck="false" data-track data-autogrow<%= ' disabled' if removed %>><%= edit&.value unless removed %></textarea>
-              <label class="remove-toggle" title="Remove <%= line.path %>">
-                <input type="checkbox" name="edits[<%= index %>][remove]" value="1" data-track data-remove-toggle<%= ' checked' if removed %>> remove
-              </label>
+              <% if can_update? || can_destroy? %>
+                <input type="hidden" name="edits[<%= index %>][key]" value="<%= line.path %>">
+              <% end %>
+              <% if can_update? %>
+                <textarea name="edits[<%= index %>][secret_value]" id="edit_<%= index %>" rows="1" placeholder="•••••• unchanged"
+                  autocomplete="off" spellcheck="false" data-track data-autogrow<%= ' disabled' if removed %>><%= edit&.value unless removed %></textarea>
+              <% else %>
+                <span class="muted small">••••••</span>
+              <% end %>
+              <% if can_destroy? %>
+                <label class="remove-toggle" title="Remove <%= line.path %>">
+                  <input type="checkbox" name="edits[<%= index %>][remove]" value="1" data-track data-remove-toggle<%= ' checked' if removed %>> remove
+                </label>
+              <% end %>
             </div>
             <% index += 1 %>
           <% end %>

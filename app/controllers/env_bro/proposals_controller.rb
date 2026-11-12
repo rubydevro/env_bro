@@ -1,7 +1,9 @@
 module EnvBro
   class ProposalsController < ApplicationController
-    before_action { env_bro_authorize!(:propose) }
+    before_action { env_bro_authorize!(:propose) } # any of create, update, destroy
     before_action :env_bro_require_ready
+
+    helper_method :can_create?, :can_update?, :can_destroy?
 
     def new
       @new_keys = [ Editor::Change.new(action: "set") ]
@@ -13,6 +15,8 @@ module EnvBro
       @new_keys = new_key_params
       @edits = edit_params.index_by(&:key)
       changes = @new_keys + @edits.values.reject { |c| c.action == "set" && c.value.blank? }
+
+      authorize_changes!(changes)
 
       result = Editor.new(@environment).apply(changes, author: EnvBro.config.user_label.call(env_bro_user))
 
@@ -31,6 +35,23 @@ module EnvBro
     end
 
     private
+      def can_create? = env_bro_can?(:create)
+      def can_update? = env_bro_can?(:update)
+      def can_destroy? = env_bro_can?(:destroy)
+
+      # Each change needs the matching permission: removing a key is destroy, setting a key
+      # that already exists is update, setting a new one is create. Checked on the server, so
+      # a hand-built request can't do more than the form offers.
+      def authorize_changes!(changes)
+        existing = @environment.current_credentials
+        changes.each do |change|
+          key = change.key.to_s.strip
+          next if key.empty?
+          permission = change.action == "delete" ? :destroy : (existing.key?(key) ? :update : :create)
+          env_bro_authorize!(permission)
+        end
+      end
+
       # new_keys[0][key], new_keys[0][secret_value], ...
       def new_key_params
         indexed_rows(:new_keys).map do |row|

@@ -18,10 +18,10 @@ module EnvBro
         @env_bro_user = EnvBro.config.current_user.call(self)
       end
 
-      # permission: :propose, :review or :reveal
+      # permission: :create, :update, :destroy, :review or :reveal (higher ones include
+      # lower ones), or :propose for "any of create, update, destroy".
       def env_bro_can?(permission)
-        return false if env_bro_user.nil?
-        !!EnvBro.config.public_send(:"can_#{permission}").call(env_bro_user)
+        EnvBro.config.allows?(env_bro_user, permission)
       end
 
       def env_bro_authorize!(permission)

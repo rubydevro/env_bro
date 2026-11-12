@@ -11,10 +11,32 @@ module EnvBro
     attr_accessor :user_label
 
     # Permission checks, each ->(user) { true/false }.
-    #   can_propose - see key names, build a new encrypted file with changes
+    #   can_create  - propose new keys
+    #   can_update  - propose new values for existing keys
+    #   can_destroy - propose removing keys
     #   can_review  - upload a proposed file and see which keys changed (values masked)
     #   can_reveal  - reveal the actual values in a review diff (every reveal is audited)
-    attr_accessor :can_propose, :can_review, :can_reveal
+    #
+    # Any of them gets a user into the propose page (which only offers what they may do).
+    # Higher permissions include the lower ones, so you don't have to repeat yourself:
+    # review includes create, update and destroy; reveal includes everything.
+    attr_accessor :can_create, :can_update, :can_destroy, :can_review, :can_reveal
+
+    PERMISSIONS = %i[create update destroy review reveal].freeze
+
+    # Permissions that also grant the key.
+    IMPLIED_BY = {
+      create: %i[review reveal],
+      update: %i[review reveal],
+      destroy: %i[review reveal],
+      review: %i[reveal],
+      reveal: []
+    }.freeze
+
+    # Shorthand: grant create, update and destroy with one check.
+    def can_propose=(check)
+      @can_create = @can_update = @can_destroy = check
+    end
 
     # Reject plain HTTP requests (secret values travel through the browser).
     attr_accessor :require_ssl
@@ -32,13 +54,25 @@ module EnvBro
       @parent_controller = "::ApplicationController"
       @current_user = ->(controller) { controller.respond_to?(:current_user, true) ? controller.send(:current_user) : nil }
       @user_label = ->(user) { user.respond_to?(:email) ? user.email : user.to_s }
-      @can_propose = ->(_user) { false }
+      @can_create = ->(_user) { false }
+      @can_update = ->(_user) { false }
+      @can_destroy = ->(_user) { false }
       @can_review = ->(_user) { false }
       @can_reveal = ->(_user) { false }
       @require_ssl = defined?(Rails) && Rails.env.production?
       @metadata_key = "env_bro"
       @max_upload_bytes = 1024 * 1024
       @track_deployments = true
+    end
+
+    # Does the user hold this permission, directly or through a higher one?
+    # :propose means any of create, update or destroy.
+    def allows?(user, permission)
+      return false if user.nil?
+      return %i[create update destroy].any? { |p| allows?(user, p) } if permission == :propose
+      raise ArgumentError, "Unknown permission #{permission.inspect}" unless PERMISSIONS.include?(permission)
+
+      [ permission, *IMPLIED_BY.fetch(permission) ].any? { |p| !!public_send(:"can_#{p}").call(user) }
     end
   end
 end

@@ -17,9 +17,9 @@
     each("[data-leaf]", function (line) {
       var value = line.querySelector("textarea");
       var remove = line.querySelector("[data-remove-toggle]");
-      var isRemoved = remove.checked;
-      var isChanged = !isRemoved && value.value.trim() !== "";
-      value.disabled = isRemoved;
+      var isRemoved = !!remove && remove.checked;
+      var isChanged = !isRemoved && !!value && value.value.trim() !== "";
+      if (value) value.disabled = isRemoved;
       line.classList.toggle("is-removed", isRemoved);
       line.classList.toggle("is-changed", isChanged);
       if (isRemoved) removed++;
@@ -97,7 +97,8 @@
   document.addEventListener("change", function (event) {
     if (!event.target.matches("[data-remove-toggle]")) return;
     refresh();
-    if (!event.target.checked) event.target.closest("[data-leaf]").querySelector("textarea").focus();
+    var textarea = event.target.closest("[data-leaf]").querySelector("textarea");
+    if (!event.target.checked && textarea) textarea.focus();
   });
 
   // The proposal form answers with a file download, so the page itself does not change.

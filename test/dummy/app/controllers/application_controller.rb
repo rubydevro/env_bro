@@ -1,7 +1,7 @@
 class ApplicationController < ActionController::Base
   allow_browser versions: :modern
 
-  # Dummy-app shortcut: append ?as=developer (or viewer/admin) to any URL to switch user.
+  # Dummy-app shortcut: append ?as=developer (or any role in User::ROLES) to any URL to switch user.
   before_action { session[:role] = params[:as].presence if params.key?(:as) }
 
   helper_method :current_user
