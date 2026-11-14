@@ -13,7 +13,7 @@ module EnvBro
       desc "Sets up the BroHub dashboard, adds the EnvBro initializer and copies EnvBro's migrations."
 
       def copy_initializer
-        copy_file "env_bro.rb", "config/initializers/env_bro.rb"
+        copy_config_once "env_bro.rb", "config/initializers/env_bro.rb"
       end
 
       def copy_migrations
