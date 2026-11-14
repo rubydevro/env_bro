@@ -1,0 +1,25 @@
+<% env_bro_styles %>
+<% bro_hub_crumb "Environments" %>
+<%= bro_hub_hero eyebrow: "Encrypted credentials", title: "1", subtitle: "environment", tone: :green,
+      lead: "Pick an environment to propose a change. Existing values stay hidden." %>
+
+<div class="bh-table-wrap">
+  <div class="bh-table eb-cols-envs">
+    <div class="bh-row is-head"><span>File</span><span>Keys</span><span>Groups</span><span>Last change</span><span>By</span></div>
+    <% credentials = (@environment.current_credentials if @environment.ready?) %>
+    <% meta = credentials&.metadata %>
+    <% meta = nil unless meta.is_a?(Hash) %>
+    <%= link_to (env_bro_can?(:propose) ? new_proposal_path : new_review_path), class: "bh-row eb-env-row" do %>
+      <span class="eb-env-name"><%= @environment.name %><small>.yml.enc</small></span>
+      <% if credentials %>
+        <span><%= credentials.key_paths.size %></span>
+        <span><%= credentials.outline.count(&:group) %></span>
+        <span class="bh-cell-muted"><%= meta&.fetch("proposed_at", nil).presence || "-" %></span>
+        <span><%= meta&.fetch("proposed_by", nil).presence || "-" %></span>
+      <% else %>
+        <span class="bh-cell-muted">-</span><span class="bh-cell-muted">-</span>
+        <span><%= env_bro_environment_badge(@environment.status) %></span><span></span>
+      <% end %>
+    <% end %>
+  </div>
+</div>

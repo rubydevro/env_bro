@@ -1,0 +1,57 @@
+<%# What EnvBro's pages need on top of BroHub's shared styles. %>
+<style<%= %( nonce="#{content_security_policy_nonce}").html_safe if content_security_policy_nonce %>>
+.bh-main code { font: 500 .92em var(--bh-mono); color: var(--bh-text); overflow-wrap: anywhere; }
+.hidden { display: none !important; }
+.eb-cols-envs { --cols: minmax(200px, 1fr) 80px 80px 190px 130px; --min: 700px; }
+.eb-cols-diff { --cols: minmax(150px, 1.2fr) 100px minmax(110px, 1fr) minmax(110px, 1fr) 80px; --min: 640px; }
+.eb-cols-diff.no-reveal { --cols: minmax(150px, 1.2fr) 100px minmax(110px, 1fr) minmax(110px, 1fr); }
+.eb-cols-audit { --cols: 170px 130px 150px minmax(180px, 1fr) minmax(170px, 1fr); --min: 840px; }
+.eb-env-name { font: 700 20px var(--bh-sans); font-stretch: 85%; color: var(--bh-text); }
+.eb-env-name small { font: 400 13px var(--bh-mono); color: var(--bh-muted); }
+a.bh-row.eb-env-row:hover { border-left-color: var(--bh-green); }
+.eb-keys { margin-top: 0; }
+.eb-banner { padding: 14px var(--bh-pad); border-bottom: 1px solid var(--bh-line); border-left: 4px solid var(--bh-muted); font: 500 13px/1.5 var(--bh-mono); text-wrap: pretty; }
+.eb-banner[hidden] { display: none; }
+.eb-banner.is-ok { border-left-color: var(--bh-green); background: rgba(46, 204, 122, .08); }
+.eb-banner.is-warn { border-left-color: var(--bh-amber); background: rgba(245, 184, 74, .1); }
+.eb-banner.is-error { border-left-color: var(--bh-red); background: rgba(240, 79, 84, .12); }
+.eb-banner strong { color: var(--bh-text); }
+.eb-steps { margin: 12px 0 0; padding-left: 20px; line-height: 1.7; }
+.eb-note { margin: 12px 0 0; font: 400 12px var(--bh-mono); color: var(--bh-muted); text-wrap: pretty; }
+
+/* Propose a change */
+.newkey-row { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; margin-bottom: 10px; }
+.newkey-row input, .newkey-row textarea { background: transparent; border: 0; border-bottom: 2px solid var(--bh-text); color: var(--bh-text); font: 500 14px var(--bh-mono); padding: 10px 0; outline: none; min-width: 0; resize: none; overflow: hidden; }
+.newkey-row input { flex: 1 1 220px; }
+.newkey-row textarea { flex: 2 1 280px; }
+.newkey-row input:focus, .newkey-row textarea:focus { border-bottom-color: var(--bh-green); }
+.icon-btn { background: none; border: 0; cursor: pointer; font: 600 16px var(--bh-mono); color: var(--bh-muted); padding: 6px 8px; }
+.icon-btn:hover { color: var(--bh-red); }
+.eb-add { cursor: pointer; padding: 6px 10px; font: 600 12px var(--bh-mono); border: 1px solid var(--bh-green); background: transparent; color: var(--bh-green); }
+.eb-add:hover { background: var(--bh-green); color: var(--bh-bg); }
+.yaml-line.yaml-group { padding: 16px 0 6px 14px; font: 600 14px var(--bh-mono); color: var(--bh-violet-l); }
+.yaml-line.yaml-leaf { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(160px, 1.5fr) auto; gap: 16px; align-items: center; padding: 8px 0 8px 10px; border-bottom: 1px solid var(--bh-line); border-left: 4px solid transparent; }
+.yaml-line.is-changed { border-left-color: var(--bh-violet); background: rgba(124, 109, 250, .12); }
+.yaml-line.is-removed { border-left-color: var(--bh-red); background: rgba(240, 79, 84, .12); }
+.yaml-key { font: 500 15px var(--bh-mono); overflow-wrap: anywhere; }
+.yaml-key.depth-1 { padding-left: 24px; } .yaml-key.depth-2 { padding-left: 48px; } .yaml-key.depth-3 { padding-left: 72px; }
+.yaml-key.depth-4 { padding-left: 96px; } .yaml-key.depth-5 { padding-left: 120px; } .yaml-key.depth-6 { padding-left: 144px; }
+.is-removed .yaml-key { color: var(--bh-red); text-decoration: line-through; }
+.yaml-leaf textarea { min-width: 0; background: transparent; border: 0; border-bottom: 1px solid var(--bh-line-2); color: var(--bh-text); font: 500 14px var(--bh-mono); padding: 8px 0; outline: none; resize: none; overflow: hidden; }
+.yaml-leaf textarea:focus { border-bottom-color: var(--bh-violet); }
+.yaml-leaf textarea:disabled { color: var(--bh-muted); }
+.remove-toggle { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; padding: 6px 10px; font: 600 12px var(--bh-mono); border: 1px solid var(--bh-line-2); color: var(--bh-text); }
+.remove-toggle input { accent-color: var(--bh-red); margin: 0; }
+.is-removed .remove-toggle { border-color: var(--bh-red); background: var(--bh-red); color: var(--bh-bg); }
+.eb-summary { font: 500 13px var(--bh-mono); color: var(--bh-muted); }
+.eb-summary.has-changes { color: var(--bh-text); }
+
+/* Review */
+.mask { letter-spacing: .1em; }
+.btn-link { background: none; border: 0; padding: 0; cursor: pointer; font: 600 12px var(--bh-mono); color: var(--bh-violet-l); text-decoration: underline; }
+.eb-details summary { cursor: pointer; font: 600 13px var(--bh-mono); color: var(--bh-muted); }
+.eb-details[open] summary { margin-bottom: 12px; }
+.eb-file input[type="file"] { padding: 12px 0; font: 500 13px var(--bh-mono); color: var(--bh-text); border-bottom: 2px solid var(--bh-line-2); }
+.eb-summary-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.eb-unchanged-key { padding: 6px 0 6px 10px; border-bottom: 1px solid var(--bh-line); font: 500 13px var(--bh-mono); color: var(--bh-muted); }
+</style>

@@ -20,34 +20,43 @@ class EnvBro::Generators::InstallGeneratorTest < Rails::Generators::TestCase
     end
   end
 
-  test "mounts at the default path when not interactive" do
+  test "mounts BroHub, not EnvBro, at the default path when not interactive" do
     with_tty(false) { run_install }
-    assert_file "config/routes.rb", %r{mount EnvBro::Engine => "/admin/env"}
+    assert_file "config/routes.rb", %r{mount BroHub::Engine => "/bro_hub"}
+    assert_file "config/routes.rb" do |content|
+      assert_no_match(/EnvBro::Engine/, content)
+    end
+    assert_file "config/initializers/bro_hub.rb"
   end
 
   test "mounts at --mount-path, normalizing slashes" do
     run_install "--mount-path=ops/credentials/"
-    assert_file "config/routes.rb", %r{mount EnvBro::Engine => "/ops/credentials"}
+    assert_file "config/routes.rb", %r{mount BroHub::Engine => "/ops/credentials"}
   end
 
-  test "asks for the path when interactive" do
-    install = generator([], {}, destination_root: destination_root)
-    def install.copy_migrations; end
-    def install.ask(question, **opts)
-      (@asked ||= []) << [ question, opts ]
-      "secrets"
-    end
-    with_tty(true) { capture(:stdout) { install.invoke_all } }
-
-    assert_equal [ [ "Where should EnvBro be mounted?", { default: "/admin/env" } ] ], install.instance_variable_get(:@asked)
-    assert_file "config/routes.rb", %r{mount EnvBro::Engine => "/secrets"}
-  end
-
-  test "does not mount twice" do
+  test "does not mount BroHub twice" do
     run_install
     run_install "--mount-path=/other"
     assert_file "config/routes.rb" do |content|
-      assert_equal 1, content.scan("EnvBro::Engine").size
+      assert_equal 1, content.scan("BroHub::Engine").size
+    end
+  end
+
+  test "leaves an existing direct EnvBro mount alone and says to remove it" do
+    File.write(File.join(destination_root, "config/routes.rb"),
+      "Rails.application.routes.draw do\n  mount EnvBro::Engine => \"/admin/env\"\nend\n")
+    output = run_install
+    assert_file "config/routes.rb", %r{mount EnvBro::Engine => "/admin/env"}
+    assert_match "still mounted directly", output
+  end
+
+  test "comments out the old direct mount with --remove-direct-mounts" do
+    File.write(File.join(destination_root, "config/routes.rb"),
+      "Rails.application.routes.draw do\n  mount EnvBro::Engine => \"/admin/env\"\nend\n")
+    run_install "--remove-direct-mounts"
+    assert_file "config/routes.rb" do |content|
+      assert_match %r{# BroHub mounts this now: mount EnvBro::Engine}, content
+      assert_no_match(/^\s*mount EnvBro::Engine/, content)
     end
   end
 
@@ -56,7 +65,7 @@ class EnvBro::Generators::InstallGeneratorTest < Rails::Generators::TestCase
     def run_install(*args)
       install = generator([], args, destination_root: destination_root)
       def install.copy_migrations; end
-      capture(:stdout) { install.invoke_all }
+      with_tty(false) { capture(:stdout) { install.invoke_all } }
     end
 
     def with_tty(value)

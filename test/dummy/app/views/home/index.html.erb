@@ -1,12 +1,12 @@
 <h1>EnvBro dummy app</h1>
-<p>Pretend to be a user, then open <%= link_to "/admin/env", env_bro.root_path %>.</p>
+<p>Pretend to be a user, then open <%= link_to "/bro_hub", bro_hub.root_path %> (EnvBro lives at /bro_hub/env_bro; <%= link_to "/admin/env", env_bro.root_path %> is the old direct mount).</p>
 <p>Signed in as: <strong><%= current_user&.email || "nobody" %></strong></p>
 
 <%= form_with url: role_path, method: :post do %>
   <% (User::ROLES + [ nil ]).each do |role| %>
     <button type="submit" name="role" value="<%= role %>"><%= role || "sign out" %></button>
   <% end %>
-  <input type="hidden" name="return_to" value="<%= env_bro.root_path %>">
+  <input type="hidden" name="return_to" value="<%= bro_hub.root_path %>">
 <% end %>
 
 <ul>

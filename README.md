@@ -3,7 +3,7 @@
 Propose changes to Rails encrypted credentials without holding the keys.
 
 EnvBro manages the credentials of the environment it runs in: on production it edits
-`production.yml.enc`, on staging `staging.yml.enc`. Team members with permission open `/admin/env`,
+`production.yml.enc`, on staging `staging.yml.enc`. Team members with permission open the BroHub dashboard (`/bro_hub/env_bro`),
 pick keys to add, change or remove, and download the re-encrypted file. They commit it on a branch and open a PR. A reviewer uploads the
 file from the PR and sees which keys changed, with values masked unless they choose to reveal them.
 
@@ -39,9 +39,26 @@ gem "env_bro", git: "https://github.com/rubydevro/env_bro.git"
 ```
 
 ```sh
-bin/rails generate env_bro:install   # initializer, route (asks for the path; or --mount-path=/admin/env), migration
+bin/rails generate env_bro:install   # BroHub (mount + initializer), then EnvBro's initializer and migration. --mount-path=/bro_hub skips the question
 bin/rails db:migrate
 ```
+
+EnvBro's pages live in [BroHub](https://github.com/rubydevro/bro_hub), the shared dashboard shell for the Bro gems
+(EnvBro, SafeBro, ...). You mount BroHub once and it mounts EnvBro under it:
+
+```ruby
+# config/routes.rb
+mount BroHub::Engine => "/bro_hub"   # EnvBro is at /bro_hub/env_bro
+```
+
+BroHub also owns "who is signed in": set `BroHub.config.current_user` once (see the BroHub README) and every Bro gem uses it.
+`config.current_user` below only needs setting when EnvBro must differ.
+
+### Upgrading from 0.1.x
+
+Run `bin/rails generate bro_hub:install --remove-direct-mounts`: it mounts BroHub once and comments out the old direct `mount EnvBro::Engine => "..."` line. An old direct mount keeps working
+(EnvBro then shows its own section in the same shell), so you can upgrade in two steps. Two things change in the UI:
+the home page is now an environments overview instead of a redirect, and the layout comes from BroHub.
 
 The generator wraps Rails' built-in `bin/rails env_bro:install:migrations`. Use that task on its own
 to pick up new migrations after upgrading the gem.
@@ -59,7 +76,7 @@ EnvBro.configure do |config|
 
   # Defaults shown:
   # config.parent_controller = "::ApplicationController"   # gives access to your auth
-  # config.current_user = ->(controller) { controller.send(:current_user) }
+  # config.current_user = ->(controller) { controller.send(:current_user) }   # default: BroHub.config.current_user
   # config.user_label = ->(user) { user.email }
   # config.require_ssl = Rails.env.production?
   # config.metadata_key = "env_bro"
@@ -108,7 +125,7 @@ what's wrong instead of the forms.
 ```sh
 bundle install
 bin/rails test                      # unit + integration tests
-cd test/dummy && bin/rails s        # http://localhost:3000
+cd test/dummy && bin/rails s        # http://localhost:3000, EnvBro in BroHub at /bro_hub, old direct mount at /admin/env
 ```
 
 The dummy app comes with sample `development` and `test` credentials and keys in

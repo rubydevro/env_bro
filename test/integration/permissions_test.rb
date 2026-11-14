@@ -4,7 +4,7 @@ class PermissionsTest < ActionDispatch::IntegrationTest
   test "every propose permission opens the propose page, but only offers what it allows" do
     { "creator" => [ true, false, false ], "updater" => [ false, true, false ], "developer" => [ true, true, true ] }.each do |role, (create, update, destroy)|
       sign_in_as role
-      get "/admin/env/proposal/new"
+      get "/bro_hub/env_bro/proposal/new"
       assert_response :success, role
       assert_select "[data-new-keys]", create ? 1 : 0
       assert_select "[data-leaf='stripe.secret_key'] textarea", update ? 1 : 0
@@ -14,7 +14,7 @@ class PermissionsTest < ActionDispatch::IntegrationTest
 
   test "creators can't see more than key names" do
     sign_in_as "creator"
-    get "/admin/env/proposal/new"
+    get "/bro_hub/env_bro/proposal/new"
     assert_select "[data-leaf='stripe.secret_key']"
     environment.current_credentials.flatten.each_value { |value| refute_includes response.body, value.to_s }
   end
@@ -58,7 +58,7 @@ class PermissionsTest < ActionDispatch::IntegrationTest
   test "reviewers and admins can propose without a separate grant" do
     %w[reviewer admin].each do |role|
       sign_in_as role
-      get "/admin/env/proposal/new"
+      get "/bro_hub/env_bro/proposal/new"
       assert_select "[data-new-keys]"
       assert_select "[data-leaf='stripe.secret_key'] [data-remove-toggle]"
       propose(new_keys: [ { key: "github.token", secret_value: "x" } ], edits: [ { key: "sendgrid_api_key", remove: "1" } ])
@@ -68,31 +68,35 @@ class PermissionsTest < ActionDispatch::IntegrationTest
 
   test "reviewers review, but only admins reveal" do
     sign_in_as "reviewer"
-    get "/admin/env/review/new"
+    get "/bro_hub/env_bro/review/new"
     assert_response :success
-    post "/admin/env/review/reveal", params: { proposed_enc: "x", reveal_key: "*" }
+    post "/bro_hub/env_bro/review/reveal", params: { proposed_enc: "x", reveal_key: "*" }
     assert_response :forbidden
 
     sign_in_as "admin"
-    get "/admin/env/review/new"
+    get "/bro_hub/env_bro/review/new"
     assert_response :success
   end
 
   test "propose-only users don't get the review pages" do
     sign_in_as "creator"
-    get "/admin/env/review/new"
+    get "/bro_hub/env_bro/review/new"
     assert_response :forbidden
-    get "/admin/env/audit"
+    get "/bro_hub/env_bro/audit"
     assert_response :forbidden
   end
 
-  test "reviewers land on the propose page, viewers get nothing" do
-    sign_in_as "reviewer"
-    get "/admin/env"
-    assert_redirected_to "/admin/env/proposal/new"
+  test "everyone with a permission gets the environments page, viewers get nothing" do
+    %w[creator updater developer reviewer admin].each do |role|
+      sign_in_as role
+      get "/bro_hub/env_bro"
+      assert_response :success, role
+    end
 
     sign_in_as "viewer"
-    get "/admin/env/proposal/new"
+    get "/bro_hub/env_bro"
+    assert_response :forbidden
+    get "/bro_hub/env_bro/proposal/new"
     assert_response :forbidden
   end
 end

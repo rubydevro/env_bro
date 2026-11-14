@@ -2,35 +2,52 @@ require "test_helper"
 
 class ProposalFlowTest < ActionDispatch::IntegrationTest
   test "anonymous users and viewers are forbidden" do
-    get "/admin/env"
+    get "/bro_hub/env_bro"
     assert_response :forbidden
 
     sign_in_as "viewer"
-    get "/admin/env/proposal/new"
+    get "/bro_hub/env_bro/proposal/new"
     assert_response :forbidden
   end
 
-  test "home redirects to the page the user can use" do
+  test "home lists the environment and links to where the user can work" do
     sign_in_as "developer"
-    get "/admin/env"
-    assert_redirected_to "/admin/env/proposal/new"
+    get "/bro_hub/env_bro"
+    assert_response :success
+    assert_select ".bh-title", /1\s+environment/
+    assert_select "a.bh-row[href='/bro_hub/env_bro/proposal/new']", /test\.yml\.enc/
+    assert_select "a.bh-row", text: /#{environment.current_credentials.key_paths.size}/
 
     sign_in_as "admin"
-    get "/admin/env"
-    assert_redirected_to "/admin/env/proposal/new"
+    get "/bro_hub/env_bro"
+    assert_select "a.bh-row[href='/bro_hub/env_bro/proposal/new']"
+  end
+
+  test "home never shows values" do
+    sign_in_as "admin"
+    get "/bro_hub/env_bro"
+    environment.current_credentials.flatten.each_value { |value| refute_includes response.body, value.to_s }
+  end
+
+  test "home says what is wrong when the environment is not ready" do
+    broken = EnvBro::Environment.new(name: "test", content_path: environment.content_path, key_path: "/nonexistent.key", env_key: "ENV_BRO_UNSET_KEY")
+    sign_in_as "developer"
+    with_current_environment(broken) { get "/bro_hub/env_bro" }
+    assert_response :success
+    assert_select ".bh-tag.is-red", text: "no key on server"
   end
 
   test "explains the problem when this server can't decrypt its credentials" do
     broken = EnvBro::Environment.new(name: "test", content_path: environment.content_path, key_path: "/nonexistent.key", env_key: "ENV_BRO_UNSET_KEY")
     sign_in_as "developer"
-    with_current_environment(broken) { get "/admin/env/proposal/new" }
+    with_current_environment(broken) { get "/bro_hub/env_bro/proposal/new" }
     assert_response :service_unavailable
-    assert_select ".badge-danger", text: "no key on server"
+    assert_select ".bh-tag.is-red", text: "no key on server"
   end
 
   test "developer sees key names but never values" do
     sign_in_as "developer"
-    get "/admin/env/proposal/new"
+    get "/bro_hub/env_bro/proposal/new"
     assert_response :success
     assert_select ".yaml-group", text: "aws:"
     assert_select "[data-leaf='aws.secret_access_key'] .yaml-key.depth-1", text: "secret_access_key:"

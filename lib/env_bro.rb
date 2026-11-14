@@ -1,3 +1,4 @@
+require "bro_hub"
 require "env_bro/version"
 require "env_bro/configuration"
 require "env_bro/environment"

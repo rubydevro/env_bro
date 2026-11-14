@@ -4,7 +4,7 @@ module EnvBro
     # ApplicationController gives access to its authentication (current_user etc).
     attr_accessor :parent_controller
 
-    # ->(controller) { ... } returning the signed in user, or nil.
+    # ->(controller) { ... } returning the signed in user, or nil. Defaults to BroHub.config.current_user.
     attr_accessor :current_user
 
     # ->(user) { ... } returning a short label for the audit log and file metadata.
@@ -52,7 +52,8 @@ module EnvBro
 
     def initialize
       @parent_controller = "::ApplicationController"
-      @current_user = ->(controller) { controller.respond_to?(:current_user, true) ? controller.send(:current_user) : nil }
+      # Configured once for all Bro gems in BroHub.config.current_user, unless EnvBro needs its own.
+      @current_user = ->(controller) { BroHub.config.current_user.call(controller) }
       @user_label = ->(user) { user.respond_to?(:email) ? user.email : user.to_s }
       @can_create = ->(_user) { false }
       @can_update = ->(_user) { false }

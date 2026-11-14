@@ -1,13 +1,8 @@
 module EnvBro
   class HomeController < ApplicationController
+    before_action { raise EnvBro::Forbidden unless env_bro_can?(:propose) || env_bro_can?(:review) }
+
     def index
-      if env_bro_can?(:propose)
-        redirect_to new_proposal_path
-      elsif env_bro_can?(:review)
-        redirect_to new_review_path
-      else
-        raise EnvBro::Forbidden
-      end
     end
   end
 end

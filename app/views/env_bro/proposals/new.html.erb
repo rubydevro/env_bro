@@ -1,46 +1,46 @@
-<% content_for :title, "Propose · #{@environment.name}" %>
-<div class="page-head">
-  <div>
-    <h1>Propose a change to <%= @environment.name %></h1>
-    <p class="muted">Existing values stay hidden.
-      <% abilities = [] %>
-      <% abilities << "add new keys" if can_create? %>
-      <% abilities << "type a value to replace one" if can_update? %>
-      <% abilities << "tick <em>remove</em> to drop a key".html_safe if can_destroy? %>
-      You can <%= safe_join(abilities, ", ") %>.</p>
-  </div>
-</div>
+<% env_bro_styles %>
+<% bro_hub_crumb @environment.name, "Propose a change" %>
+<% content_for :bro_hub_crumb_actions do %>
+  <%= bro_hub_crumb_link @environment.name, new_proposal_path, active: true %>
+<% end %>
+<% abilities = [] %>
+<% abilities << "add new keys" if can_create? %>
+<% abilities << "type a value to replace one" if can_update? %>
+<% abilities << "tick <em>remove</em> to drop a key".html_safe if can_destroy? %>
+<%= bro_hub_hero eyebrow: "#{@environment.filename} · #{@outline.count { |line| !line.group }} keys",
+      title: "Propose a change", subtitle: content_tag(:span, "to #{@environment.name}", class: "bh-tone-green"),
+      lead: safe_join([ "Existing values stay hidden. You can ", safe_join(abilities, ", "), "." ]) %>
 
 <% if @error %>
-  <div class="alert alert-error"><%= @error %></div>
+  <div class="eb-banner is-error"><%= @error %></div>
 <% end %>
 
 <%= form_with url: proposal_path, method: :post, local: true, data: { proposal_form: true, turbo: false } do %>
   <% if can_create? %>
-  <section class="panel">
-    <div class="toolbar">
-      <h2>Add new keys</h2>
-      <button type="button" class="btn btn-small" data-add-new-key>+ Another key</button>
+  <section class="bh-block">
+    <div class="bh-block-head">
+      <h2 class="bh-h2">Add new keys</h2>
+      <button type="button" class="eb-add" data-add-new-key>+ Another key</button>
     </div>
     <div data-new-keys>
       <% @new_keys.each_with_index do |change, i| %>
         <%= render "new_key_row", change: change, index: i %>
       <% end %>
     </div>
-    <p class="hint">Nest keys with dots: <code>stripe.publishable_key</code> goes under <code>stripe:</code>. A new group is created if needed.</p>
+    <p class="eb-note">Nest keys with dots: <code>stripe.publishable_key</code> goes under <code>stripe:</code>. A new group is created if needed.</p>
   </section>
   <% end %>
 
-  <section class="panel panel-flush">
-    <div class="toolbar panel-pad">
-      <h2><code><%= @environment.filename %></code></h2>
-      <input type="search" class="filter" placeholder="Filter keys…" data-filter aria-label="Filter keys">
+  <section class="bh-block">
+    <div class="bh-block-head">
+      <h2 class="bh-h2" style="text-transform:none"><code><%= @environment.filename %></code></h2>
+      <input type="search" class="bh-input" style="flex:0 1 260px" placeholder="Filter keys…" data-filter aria-label="Filter keys">
     </div>
 
     <% if @outline.empty? %>
-      <p class="empty">This file has no keys yet.<%= " Add some above." if can_create? %></p>
+      <p class="bh-hint">This file has no keys yet.<%= " Add some above." if can_create? %></p>
     <% else %>
-      <div class="yaml">
+      <div class="bh-log eb-keys">
         <% index = 0 %>
         <% @outline.each do |line| %>
           <% if line.group %>
@@ -59,7 +59,7 @@
                 <textarea name="edits[<%= index %>][secret_value]" id="edit_<%= index %>" rows="1" placeholder="•••••• unchanged"
                   autocomplete="off" spellcheck="false" data-track data-autogrow<%= ' disabled' if removed %>><%= edit&.value unless removed %></textarea>
               <% else %>
-                <span class="muted small">••••••</span>
+                <span class="bh-cell-muted">••••••</span>
               <% end %>
               <% if can_destroy? %>
                 <label class="remove-toggle" title="Remove <%= line.path %>">
@@ -70,28 +70,30 @@
             <% index += 1 %>
           <% end %>
         <% end %>
-        <p class="empty hidden" data-filter-empty>No keys match.</p>
+        <p class="bh-hint hidden" data-filter-empty>No keys match.</p>
       </div>
     <% end %>
   </section>
 
-  <div class="submitbar">
-    <span class="muted" data-summary>No changes yet</span>
-    <button type="submit" class="btn btn-primary" data-submit>Build &amp; download <%= @environment.filename %></button>
-  </div>
-
-  <div id="download-notice" class="alert alert-ok" hidden>
+  <div id="download-notice" class="eb-banner is-ok" hidden>
     <strong>Your download should start now.</strong> Next:
-    <ol class="steps mt-12">
+    <ol class="eb-steps">
       <li>Create a branch in the app repo.</li>
       <li>Replace <code><%= env_bro_display_path(@environment.content_path) %></code> with the downloaded file.</li>
       <li>Commit, push and open a pull request. Mention which keys you changed and why.</li>
       <li>A reviewer checks it in EnvBro and merges.</li>
     </ol>
-    <p class="small mt-12">If someone else's change merges first, build your file again. Encrypted files can't be merged.</p>
+    <p class="eb-note">If someone else's change merges first, build your file again. Encrypted files can't be merged.</p>
+  </div>
+
+  <div class="bh-sticky">
+    <span class="eb-summary" data-summary>No changes yet</span>
+    <button type="submit" class="bh-btn is-green is-auto" data-submit>Build &amp; download <%= @environment.filename %></button>
   </div>
 <% end %>
 
 <template id="new-key-template">
   <%= render "new_key_row", change: EnvBro::Editor::Change.new(action: "set"), index: "__INDEX__" %>
 </template>
+
+<%= render "env_bro/shared/script" %>

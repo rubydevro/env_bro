@@ -65,6 +65,6 @@ class ActionDispatch::IntegrationTest
   # new_keys: [{ key:, secret_value: }], edits: [{ key:, secret_value: }] or [{ key:, remove: "1" }]
   def propose(new_keys: [], edits: [])
     indexed = ->(rows) { rows.each_with_index.to_h { |row, i| [ i.to_s, row ] } }
-    post "/admin/env/proposal", params: { new_keys: indexed.(new_keys), edits: indexed.(edits) }
+    post "/bro_hub/env_bro/proposal", params: { new_keys: indexed.(new_keys), edits: indexed.(edits) }
   end
 end

@@ -1,6 +1,7 @@
 module EnvBro
   class ApplicationController < EnvBro.config.parent_controller.constantize
-    layout "env_bro/application"
+    include BroHub::Layout
+    bro_hub_section :env_bro
 
     protect_from_forgery with: :exception
 
@@ -16,6 +17,11 @@ module EnvBro
       def env_bro_user
         return @env_bro_user if defined?(@env_bro_user)
         @env_bro_user = EnvBro.config.current_user.call(self)
+      end
+
+      # BroHub shows this name in the top bar, so it must be the same person EnvBro authorizes.
+      def bro_hub_user
+        env_bro_user
       end
 
       # permission: :create, :update, :destroy, :review or :reveal (higher ones include

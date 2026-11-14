@@ -3,6 +3,9 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in env_bro.gemspec.
 gemspec
 
+# Until bro_hub is published, use the sibling checkout.
+gem "bro_hub", path: "../bro_hub"
+
 gem "puma"
 
 # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]

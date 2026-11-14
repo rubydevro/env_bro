@@ -1,4 +1,12 @@
 module EnvBro
+  # Items in the BroHub sidebar. Paths are relative to the engine.
+  BRO_HUB_ITEMS = [
+    { label: "Environments", path: "/" },
+    { label: "Propose a change", path: "/proposal/new" },
+    { label: "Review", path: "/review/new", match: %r{\A/review} },
+    { label: "Audit log", path: "/audit" }
+  ].freeze
+
   class Engine < ::Rails::Engine
     isolate_namespace EnvBro
 
@@ -13,3 +21,9 @@ module EnvBro
     end
   end
 end
+
+# Registered when the gem loads, so it is in place before routes are drawn and BroHub can mount the engine.
+# Showing a section is navigation only: every EnvBro controller still authorizes each request.
+BroHub.register :env_bro, name: "EnvBro", label: "EnvBro · config", accent: :green,
+  engine: "EnvBro::Engine", order: 20, items: EnvBro::BRO_HUB_ITEMS,
+  visible_to: ->(user) { EnvBro.config.allows?(user, :propose) || EnvBro.config.allows?(user, :review) }

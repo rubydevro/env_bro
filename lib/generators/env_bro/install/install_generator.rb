@@ -1,29 +1,19 @@
 require "rails/generators"
+require "generators/bro_hub/installable"
 
 module EnvBro
   module Generators
     # bin/rails generate env_bro:install
     class InstallGenerator < Rails::Generators::Base
+      # BroHub first (one mount for all the Bro gems), then EnvBro itself.
+      include BroHub::Generators::Installable
+
       source_root File.expand_path("templates", __dir__)
 
-      desc "Adds the EnvBro initializer, mounts the engine and copies its migrations."
-
-      DEFAULT_MOUNT_PATH = "/admin/env"
-
-      class_option :mount_path, type: :string,
-        desc: "Where to mount EnvBro (asked interactively when omitted, default #{DEFAULT_MOUNT_PATH})"
+      desc "Sets up the BroHub dashboard, adds the EnvBro initializer and copies EnvBro's migrations."
 
       def copy_initializer
         copy_file "env_bro.rb", "config/initializers/env_bro.rb"
-      end
-
-      def mount_engine
-        routes = File.join(destination_root, "config/routes.rb")
-        if File.exist?(routes) && File.read(routes).include?("EnvBro::Engine")
-          say_status :skip, "EnvBro::Engine is already mounted", :yellow
-        else
-          route %(mount EnvBro::Engine => "#{mount_path}")
-        end
       end
 
       def copy_migrations
@@ -36,20 +26,11 @@ module EnvBro
           EnvBro is installed. Next:
             1. bin/rails db:migrate
             2. Set who may propose, review and reveal in config/initializers/env_bro.rb
-            3. Visit #{mount_path}
+            3. Visit #{bro_hub_path}/env_bro (BroHub mounts EnvBro under its own path)
+            4. Upgrading from EnvBro 0.1.x? Run `bin/rails g bro_hub:install --remove-direct-mounts`, or remove the old
+               `mount EnvBro::Engine` line from config/routes.rb yourself. It keeps working until you do.
         TEXT
       end
-
-      private
-        # --mount-path wins; otherwise ask when someone is at the terminal.
-        def mount_path
-          @mount_path ||= begin
-            path = options[:mount_path].presence
-            path ||= ask("Where should EnvBro be mounted?", default: DEFAULT_MOUNT_PATH) if $stdin.tty?
-            path = path.to_s.strip.presence || DEFAULT_MOUNT_PATH
-            "/" + path.delete_prefix("/").delete_suffix("/")
-          end
-        end
     end
   end
 end
