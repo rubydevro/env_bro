@@ -1,9 +1,7 @@
 module EnvBro
   class ApplicationController < EnvBro.config.parent_controller.constantize
-    include BroHub::Layout
+    include BroHub::ControllerBase
     bro_hub_section :env_bro
-
-    protect_from_forgery with: :exception
 
     before_action :env_bro_require_ssl
     before_action :env_bro_no_store
