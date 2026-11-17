@@ -21,8 +21,9 @@ The encryption key never leaves the server, and EnvBro never writes to the crede
      compared against. Encrypted files can't be merged, so a stale file would undo other people's changes.
    - **Not built with EnvBro:** shown when the file has no metadata. It may have been edited by hand,
      or it may be an older valid copy that someone is replaying.
-4. **Audit:** proposals, reviews and every value reveal are stored in the `env_bro_audit_events`
-   table (`EnvBro::AuditEvent`) with key names only. Rows are append-only.
+4. **Audit:** proposals, reviews and every value reveal are stored in BroHub's shared audit table
+   (`bro_hub_audit_events`, `EnvBro::AuditEvent` is EnvBro's slice of it) with key names only. Rows are append-only,
+   and they also show up in BroHub's combined audit log for people allowed to review.
 5. **Deployment tracking:** Rails reads credentials at boot, so on boot EnvBro checks whether the
    running file came from a proposal and records a `proposal_deployed` event. The audit log then shows
    each proposal as *live since …*, *deployed, replaced since*, *superseded* or *not deployed yet*.
@@ -39,7 +40,7 @@ gem "env_bro", git: "https://github.com/rubydevro/env_bro.git"
 ```
 
 ```sh
-bin/rails generate env_bro:install   # BroHub (mount + initializer), then EnvBro's initializer and migration. --mount-path=/bro_hub skips the question
+bin/rails generate env_bro:install   # BroHub (mount + initializer), then EnvBro's initializer. The audit table is BroHub's migration. --mount-path=/bro_hub skips the question
 bin/rails db:migrate
 ```
 
@@ -60,8 +61,11 @@ Run `bin/rails generate bro_hub:install --remove-direct-mounts`: it mounts BroHu
 (EnvBro then shows its own section in the same shell), so you can upgrade in two steps. Two things change in the UI:
 the home page is now an environments overview instead of a redirect, and the layout comes from BroHub.
 
-The generator wraps Rails' built-in `bin/rails env_bro:install:migrations`. Use that task on its own
-to pick up new migrations after upgrading the gem.
+### Upgrading from 0.2.x
+
+EnvBro 0.3 needs **bro_hub 0.2** and writes its audit trail to BroHub's one shared table instead of `env_bro_audit_events`.
+Nothing is copied over: run `bundle update env_bro`, `bin/rails g bro_hub:install`, `bin/rails db:migrate`, and drop the old
+table whenever you like (`drop_table :env_bro_audit_events` in a migration). EnvBro no longer ships migrations of its own.
 
 Then set the permissions in `config/initializers/env_bro.rb`. Everything is denied by default:
 

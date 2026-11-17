@@ -1,16 +1,22 @@
 module EnvBro
   # Who proposed, reviewed or revealed what, and when proposals went live.
   # Holds key names only, never values.
-  class AuditEvent < ApplicationRecord
+  # The rows live in BroHub's one audit table; this is EnvBro's slice of it.
+  class AuditEvent < BroHub::AuditEvent
+    SOURCE = "env_bro".freeze
     EVENTS = %w[proposal_created proposal_deployed review_viewed values_revealed].freeze
 
-    belongs_to :proposal, class_name: "EnvBro::AuditEvent", optional: true
-    has_one :deployment, -> { where(event: "proposal_deployed") }, class_name: "EnvBro::AuditEvent", foreign_key: :proposal_id
+    default_scope { where(source: SOURCE) }
+
+    # A proposal's row keeps the id embedded in its file's metadata and the SHA-256 of the file handed out.
+    alias_attribute :proposal_token, :reference
+    alias_attribute :file_digest, :digest
+
+    # A deployment row points back at the proposal it put live (BroHub's `parent`).
+    belongs_to :proposal, class_name: "EnvBro::AuditEvent", foreign_key: :parent_id, optional: true
+    has_one :deployment, -> { where(event: "proposal_deployed") }, class_name: "EnvBro::AuditEvent", foreign_key: :parent_id
 
     validates :event, inclusion: { in: EVENTS }
-    validates :environment, presence: true
-
-    scope :recent, -> { order(created_at: :desc, id: :desc) }
     scope :proposals, -> { where(event: "proposal_created") }
     scope :deployments, -> { where(event: "proposal_deployed") }
 

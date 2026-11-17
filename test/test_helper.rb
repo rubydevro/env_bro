@@ -4,11 +4,9 @@ ENV["RAILS_ENV"] = "test"
 require_relative "../test/dummy/config/environment"
 require "rails/test_help"
 
-# Load the dummy schema into the test database on every run (cheap with SQLite).
-ActiveRecord::Schema.verbose = false
-load File.expand_path("dummy/db/schema.rb", __dir__)
-# The boot hook may have read the table before the schema was reloaded.
-EnvBro::AuditEvent.reset_column_information
+# BroHub's audit table, created fresh on every run (cheap with SQLite).
+require "bro_hub/testing"
+BroHub::Testing.load_schema
 
 class ActiveSupport::TestCase
   # config/credentials/test.yml.enc in the dummy app.

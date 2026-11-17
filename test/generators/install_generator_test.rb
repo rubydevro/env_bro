@@ -6,9 +6,16 @@ class EnvBro::Generators::InstallGeneratorTest < Rails::Generators::TestCase
   destination File.expand_path("../../tmp/generator_test", __dir__)
 
   setup do
+    BroHub::Testing.record_rails_commands.clear
     prepare_destination
     FileUtils.mkdir_p File.join(destination_root, "config")
     File.write(File.join(destination_root, "config/routes.rb"), "Rails.application.routes.draw do\nend\n")
+  end
+
+  test "leaves the audit table to BroHub, and ships no migration of its own" do
+    run_install
+    assert_equal [ "bro_hub:install:migrations" ], BroHub::Testing::RAILS_COMMANDS
+    assert_empty Dir[File.expand_path("../../db/migrate/*", __dir__)]
   end
 
   test "creates the initializer with everything denied" do
@@ -63,9 +70,7 @@ class EnvBro::Generators::InstallGeneratorTest < Rails::Generators::TestCase
   private
     # Migrations are copied by the engine's rake task, which needs a real host app.
     def run_install(*args)
-      install = generator([], args, destination_root: destination_root)
-      def install.copy_migrations; end
-      with_tty(false) { capture(:stdout) { install.invoke_all } }
+      with_tty(false) { capture(:stdout) { generator([], args, destination_root: destination_root).invoke_all } }
     end
 
     def with_tty(value)

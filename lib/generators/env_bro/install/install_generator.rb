@@ -10,14 +10,10 @@ module EnvBro
 
       source_root File.expand_path("templates", __dir__)
 
-      desc "Sets up the BroHub dashboard, adds the EnvBro initializer and copies EnvBro's migrations."
+      desc "Sets up the BroHub dashboard, adds the EnvBro initializer. The audit table comes with BroHub."
 
       def copy_initializer
         copy_config_once "env_bro.rb", "config/initializers/env_bro.rb"
-      end
-
-      def copy_migrations
-        rails_command "env_bro:install:migrations", inline: true
       end
 
       def next_steps

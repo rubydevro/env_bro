@@ -26,4 +26,5 @@ end
 # Showing a section is navigation only: every EnvBro controller still authorizes each request.
 BroHub.register :env_bro, name: "EnvBro", label: "EnvBro · config", accent: :green,
   engine: "EnvBro::Engine", order: 20, items: EnvBro::BRO_HUB_ITEMS,
-  visible_to: ->(user) { EnvBro.config.allows?(user, :propose) || EnvBro.config.allows?(user, :review) }
+  visible_to: ->(user) { EnvBro.config.allows?(user, :propose) || EnvBro.config.allows?(user, :review) },
+  audit_visible_to: ->(user) { EnvBro.config.allows?(user, :review) }

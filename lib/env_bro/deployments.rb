@@ -26,7 +26,7 @@ module EnvBro
         modified = proposal.present?
       end
 
-      return if proposal.nil? || AuditEvent.deployments.exists?(proposal_id: proposal.id)
+      return if proposal.nil? || AuditEvent.deployments.exists?(parent_id: proposal.id)
 
       Audit.record(:proposal_deployed, user: "deploy",
         columns: { proposal: proposal, file_digest: digest },
